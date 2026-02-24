@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum EventCategory {
+  CONCERT
+  WORKSHOP
+  FESTIVAL
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum WaitlistStatus {
+  WAITING
+  PROMOTED
+  EXPIRED
+}
+
+enum NotificationType {
+  WAITLIST_PROMOTED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  EVENT_UPDATED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         UserRole   @default(USER)
+  timezone     String     @default("Asia/Jakarta")
+  preferences  String[]   @default([])
+  avatarUrl    String?
+  refreshToken String?
+  createdAt    DateTime   @default(now())
+
+  bookings      Booking[]
+  waitlists     Waitlist[]
+  createdEvents Event[]        @relation("EventCreator")
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Event {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  location    String
+  imageUrl    String?
+  bannerUrl   String?
+  category    EventCategory
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  createdBy User       @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  timeSlots TimeSlot[]
+
+  @@index([createdById])
+  @@map("events")
+}
+
+model TimeSlot {
+  id          String   @id @default(uuid())
+  eventId     String
+  label       String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int
+  bookedCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+  waitlists Waitlist[]
+
+  @@index([eventId])
+  @@index([startTime, endTime])
+  @@map("time_slots")
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  userId      String
+  timeSlotId  String
+  quantity    Int
+  status      BookingStatus @default(CONFIRMED)
+  cancelledAt DateTime?
+  checkedInAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, timeSlotId])
+  @@index([userId])
+  @@index([timeSlotId])
+  @@map("bookings")
+}
+
+model Waitlist {
+  id         String         @id @default(uuid())
+  userId     String
+  timeSlotId String
+  quantity   Int
+  position   Int
+  status     WaitlistStatus @default(WAITING)
+  createdAt  DateTime       @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, timeSlotId])
+  @@index([timeSlotId, position])
+  @@map("waitlists")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
