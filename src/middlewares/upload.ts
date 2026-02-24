@@ -35,6 +35,7 @@ export const upload = multer({
 
 export const getFileUrl = (req: Request, file?: Express.Multer.File) => {
   if (!file) return undefined;
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const publicUrl = process.env.PUBLIC_URL;
+  const baseUrl = publicUrl || `${req.protocol}://${req.get('host')}`;
   return `${baseUrl}/public/uploads/${file.filename}`;
 };

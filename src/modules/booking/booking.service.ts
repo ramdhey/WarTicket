@@ -128,10 +128,33 @@ export class BookingService {
   async getUserBookings(userId: string) {
     const bookings = await bookingRepository.findByUser(userId);
     const now = new Date();
+
+    const addTickets = (b: any) => ({
+      ...b,
+      tickets: Array.from({ length: b.quantity }, (_, i) => ({
+        ticketId: `${b.id}:${i + 1}`,
+        ticketNumber: i + 1,
+      })),
+    });
+
     return {
-      upcoming: bookings.filter((b: any) => b.status === 'CONFIRMED' && new Date(b.timeSlot.endTime) > now),
-      past: bookings.filter((b: any) => b.status === 'CONFIRMED' && new Date(b.timeSlot.endTime) <= now),
-      cancelled: bookings.filter((b: any) => b.status === 'CANCELLED'),
+      upcoming: bookings.filter((b: any) => b.status === 'CONFIRMED' && new Date(b.timeSlot.endTime) > now).map(addTickets),
+      past: bookings.filter((b: any) => b.status === 'CONFIRMED' && new Date(b.timeSlot.endTime) <= now).map(addTickets),
+      cancelled: bookings.filter((b: any) => b.status === 'CANCELLED').map(addTickets),
+    };
+  }
+
+  async getBookingById(userId: string, bookingId: string) {
+    const booking = await bookingRepository.findByIdWithSlot(bookingId);
+    if (!booking) throw new AppError(404, 'Booking not found', 'BOOKING_NOT_FOUND');
+    if (booking.userId !== userId) throw new AppError(403, 'Not your booking', 'FORBIDDEN');
+
+    return {
+      ...booking,
+      tickets: Array.from({ length: booking.quantity }, (_, i) => ({
+        ticketId: `${booking.id}:${i + 1}`,
+        ticketNumber: i + 1,
+      })),
     };
   }
 }

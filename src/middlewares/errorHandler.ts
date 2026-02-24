@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import multer from 'multer';
 
 export class AppError extends Error {
   constructor(
@@ -33,6 +34,22 @@ export function errorHandler(
         message: 'Validation failed',
         code: 'VALIDATION_ERROR',
         details: err.issues,
+      },
+    });
+    return;
+  }
+
+  if (err instanceof multer.MulterError) {
+    const messages: Record<string, string> = {
+      LIMIT_FILE_SIZE: 'File too large. Maximum size is 5MB.',
+      LIMIT_UNEXPECTED_FILE: 'Unexpected file field.',
+      LIMIT_FILE_COUNT: 'Too many files.',
+    };
+    res.status(400).json({
+      success: false,
+      error: {
+        message: messages[err.code] || `Upload error: ${err.message}`,
+        code: 'UPLOAD_ERROR',
       },
     });
     return;

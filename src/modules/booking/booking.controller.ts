@@ -40,6 +40,13 @@ export class BookingController {
       res.json({ success: true, data: bookings });
     } catch (err) { next(err); }
   }
+
+  async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const booking = await bookingService.getBookingById(req.user!.userId, req.params.id as string);
+      res.json({ success: true, data: booking });
+    } catch (err) { next(err); }
+  }
 }
 
 export const bookingController = new BookingController();
