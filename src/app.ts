@@ -12,6 +12,9 @@ import path from 'path';
 
 const app = express();
 
+// Trust proxy for correct protocol generation behind NGINX
+app.set('trust proxy', 1);
+
 // Global middleware
 app.use(cors());
 app.use(express.json());

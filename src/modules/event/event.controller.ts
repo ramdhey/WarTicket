@@ -8,6 +8,7 @@ export class EventController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const input = (req as any).validated || req.body;
+      console.log('Incoming Event Data:', input, !!req.files);
       if (req.files) {
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
         if (files['image']?.[0]) input.imageUrl = getFileUrl(req, files['image'][0]);
